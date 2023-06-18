@@ -44,3 +44,5 @@ screenshot*.png
 .envrc
 
 .streamlit/
+
+chat.py

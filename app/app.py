@@ -4,15 +4,49 @@ from streamlit_chat import message
 from langchain.chat_models import ChatOpenAI
 from langchain.memory import ConversationBufferMemory
 from langchain.chains import ConversationChain
-from langchain.schema import HumanMessage
-from langchain.schema import AIMessage
+from langchain.schema import (
+    HumanMessage,
+    AIMessage,
+    SystemMessage,
+    )
+from langchain.prompts.chat import (
+    ChatPromptTemplate,
+    SystemMessagePromptTemplate,
+    HumanMessagePromptTemplate,
+    MessagesPlaceholder,
+)
+
 
 from dotenv import load_dotenv
 # 環境変数の読み込み
 load_dotenv()
 
+import re
+import requests
+import argparse
+import sys
+from bs4 import BeautifulSoup
+
+url = "https://nuco.co.jp/outline"
+def extract_main_text_from_url(url):
+    try:
+        response = requests.get(url)
+        response.raise_for_status()
+    except requests.exceptions.HTTPError as e:
+        print(f"HTTP error occurred: {e}", file=sys.stderr)
+        sys.exit(1)
+
+    soup = BeautifulSoup(response.content, "html.parser")
+
+    return soup
+
+
+
 # ChatGPT-3.5のモデルのインスタンスの作成
-chat = ChatOpenAI(model_name="gpt-3.5-turbo")
+chat = ChatOpenAI(temperature=0)
+
+#プロンプトテンプレートの作成
+
 
 # セッション内に保存されたチャット履歴のメモリの取得
 try:
