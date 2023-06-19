@@ -21,75 +21,89 @@ from dotenv import load_dotenv
 # 環境変数の読み込み
 load_dotenv()
 
-import re
-import requests
-import argparse
-import sys
-from bs4 import BeautifulSoup
-
-url = "https://nuco.co.jp/outline"
-def extract_main_text_from_url(url):
-    try:
-        response = requests.get(url)
-        response.raise_for_status()
-    except requests.exceptions.HTTPError as e:
-        print(f"HTTP error occurred: {e}", file=sys.stderr)
-        sys.exit(1)
-
-    soup = BeautifulSoup(response.content, "html.parser")
-
-    return soup
-
-
-
 # ChatGPT-3.5のモデルのインスタンスの作成
-chat = ChatOpenAI(temperature=0)
+llm = ChatOpenAI(temperature=0)
 
 #プロンプトテンプレートの作成
+template = """
+あなたは聞かれた質問に答える優秀なアシスタントです。
+以下に株式会社Nucoの会社情報を書きます。
 
+会社概要
 
-# セッション内に保存されたチャット履歴のメモリの取得
-try:
-    memory = st.session_state["memory"]
-except:
+会社名
+株式会社Nuco
+(English : Nuco Inc.)
+
+設立日
+2017年6月12日
+
+代表者名
+小山内美悠
+
+所在地
+〒150-0011
+東京都渋谷区東1-26-20
+東京建物東渋谷ビル 6F
+
+事業内容
+AIシステムの企画・開発・運営・販売
+
+社員数
+社員　15人
+インターン生　30人
+
+お問い合わせ
+https://nuco.co.jp/contact
+
+サービス例
+データ活用コンサルティング
+大規模データ基盤構築
+AIシステム開発
+AI人材育成コンサルティング
+機械学習セミナー
+
+これを元に質問に答えてください。
+"""
+
+prompt = ChatPromptTemplate.from_messages([
+    SystemMessagePromptTemplate.from_template(template),
+    MessagesPlaceholder(variable_name="history"),
+    HumanMessagePromptTemplate.from_template("{input}"),
+])
+
+@st.cache_resource
+def load_conversation():
+    llm = ChatOpenAI(temperature=0)
     memory = ConversationBufferMemory(return_messages=True)
+    conversation = ConversationChain(
+        memory=memory,
+        prompt=prompt,
+        llm=llm)
+    return conversation
 
-# チャット用のチェーンのインスタンスの作成
-chain = ConversationChain(
-    llm=chat,
-    memory=memory,
-)
 
 # Streamlitによって、タイトル部分のUIをの作成
 st.title("Nuco Chatbot")
 st.caption("Nuco Inc.")
+st.write("株式会社Nucoについての質問に答えます。")
 
-# 入力フォームと送信ボタンのUIの作成
-text_input = st.text_input("質問を入力してください")
-send_button = st.button("送信")
+if "generated" not in st.session_state:
+    st.session_state.generated = []
+if "past" not in st.session_state:
+    st.session_state.past = []
 
-# チャット履歴（HumanMessageやAIMessageなど）を格納する配列の初期化
-history = []
+with st.form("研究アシスタントに質問する"):
+    user_message = st.text_area("質問を入力してください")
+    submitted = st.form_submit_button("送信")
+    if submitted:
+        conversation = load_conversation()
+        answer = conversation.predict(input=user_message)
 
-# ボタンが押された時、OpenAIのAPIを実行
-if send_button:
-    send_button = False
+        st.session_state.generated.append(answer)
+        st.session_state.past.append(user_message)
 
-    # ChatGPTの実行
-    chain(text_input)
-
-    # セッションへのチャット履歴の保存
-    st.session_state["memory"] = memory
-
-    # チャット履歴（HumanMessageやAIMessageなど）の読み込み
-    try:
-        history = memory.load_memory_variables({})["history"]
-    except Exception as e:
-        st.error(e)
-
-# チャット履歴の表示
-for index, chat_message in enumerate(reversed(history)):
-    if type(chat_message) == HumanMessage:
-        message(chat_message.content, is_user=True, key=2 * index)
-    elif type(chat_message) == AIMessage:
-        message(chat_message.content, is_user=False, key=2 * index + 1)
+        if st.session_state["generated"]:
+            for i in range(len(st.session_state.generated) - 1, -1, -1):
+                message(st.session_state.generated[i], key=str(i))
+                message(st.session_state.past[i], is_user=True, key=str(i) + "_user")
