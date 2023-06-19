@@ -93,7 +93,7 @@ if "generated" not in st.session_state:
 if "past" not in st.session_state:
     st.session_state.past = []
 
-with st.form("研究アシスタントに質問する"):
+with st.form("Nucobotに質問する"):
     user_message = st.text_area("質問を入力してください")
     submitted = st.form_submit_button("送信")
     if submitted:
