@@ -16,9 +16,6 @@ from dotenv import load_dotenv
 # 環境変数の読み込み
 load_dotenv()
 
-# ChatGPT-3.5のモデルのインスタンスの作成
-llm = ChatOpenAI(temperature=0)
-
 #プロンプトテンプレートの作成
 template = """
 あなたは聞かれた質問に答える優秀なアシスタントです。
@@ -91,17 +88,20 @@ if "generated" not in st.session_state:
 if "past" not in st.session_state:
     st.session_state.past = []
 
-with st.form("Nucobotに質問する"):
-    user_message = st.text_area("質問を入力してください")
-    submitted = st.form_submit_button("送信")
-    if submitted:
-        conversation = load_conversation()
-        answer = conversation.predict(input=user_message)
+user_message = st.text_area("質問を入力してください")
+submitted = st.button("送信")
 
-        st.session_state.generated.append(answer)
-        st.session_state.past.append(user_message)
+if submitted:
+    conversation = load_conversation()
+    answer = conversation.predict(input=user_message)
 
-        if st.session_state["generated"]:
-            for i in range(len(st.session_state.generated) - 1, -1, -1):
-                message(st.session_state.generated[i], key=str(i))
-                message(st.session_state.past[i], is_user=True, key=str(i) + "_user")
+    st.session_state.generated.append(answer)
+    st.session_state.past.append(user_message)
+
+    # 質問送信後にsubmittedの値をリセットする
+    submitted = False
+
+if st.session_state["generated"]:
+    for i in range(len(st.session_state.generated) - 1, -1, -1):
+        message(st.session_state.generated[i])
+        message(st.session_state.past[i],is_user=True)
