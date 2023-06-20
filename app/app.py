@@ -4,11 +4,6 @@ from streamlit_chat import message
 from langchain.chat_models import ChatOpenAI
 from langchain.memory import ConversationBufferMemory
 from langchain.chains import ConversationChain
-from langchain.schema import (
-    HumanMessage,
-    AIMessage,
-    SystemMessage,
-    )
 from langchain.prompts.chat import (
     ChatPromptTemplate,
     SystemMessagePromptTemplate,
@@ -74,7 +69,10 @@ prompt = ChatPromptTemplate.from_messages([
 
 @st.cache_resource
 def load_conversation():
-    llm = ChatOpenAI(temperature=0)
+    llm = ChatOpenAI(
+        model_name="gpt-3.5-turbo",
+        temperature=0
+    )
     memory = ConversationBufferMemory(return_messages=True)
     conversation = ConversationChain(
         memory=memory,
