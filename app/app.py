@@ -41,10 +41,6 @@ template = """
 事業内容
 AIシステムの企画・開発・運営・販売
 
-社員数
-社員　15人
-インターン生　30人
-
 お問い合わせ
 https://nuco.co.jp/contact
 
@@ -103,5 +99,5 @@ if submitted:
 
 if st.session_state["generated"]:
     for i in range(len(st.session_state.generated) - 1, -1, -1):
-        message(st.session_state.generated[i])
-        message(st.session_state.past[i],is_user=True)
+        message(st.session_state.generated[i], key=str(i))
+        message(st.session_state.past[i], is_user=True, key=str(i) + "_user")
