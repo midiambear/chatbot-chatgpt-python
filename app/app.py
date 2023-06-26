@@ -74,30 +74,33 @@ def load_conversation():
     return conversation
 
 
-# Streamlitによって、タイトル部分のUIをの作成
-st.title("Nuco Chatbot")
-st.caption("Nuco Inc.")
-st.write("株式会社Nucoについての質問に答えます。")
-
 if "generated" not in st.session_state:
     st.session_state.generated = []
 if "past" not in st.session_state:
     st.session_state.past = []
 
-user_message = st.text_area("質問を入力してください")
-submitted = st.button("送信")
-
-if submitted:
+def on_input_change():
+    user_message = st.session_state.user_message
     conversation = load_conversation()
     answer = conversation.predict(input=user_message)
 
     st.session_state.generated.append(answer)
     st.session_state.past.append(user_message)
 
-    # 質問送信後にsubmittedの値をリセットする
-    submitted = False
+    st.session_state.user_message = ""
 
-if st.session_state["generated"]:
-    for i in range(len(st.session_state.generated) - 1, -1, -1):
-        message(st.session_state.generated[i], key=str(i))
-        message(st.session_state.past[i], is_user=True, key=str(i) + "_user")
+# Streamlitによって、タイトル部分のUIをの作成
+st.title("Nuco Chatbot")
+st.caption("Nuco Inc.")
+st.write("株式会社Nucoについての質問に答えます。")
+
+chat_placeholder = st.empty()
+
+with chat_placeholder.container():
+    for i in range(len(st.session_state.generated)):
+        message(st.session_state.past[i],is_user=True)
+        message(st.session_state.generated[i])
+
+with st.container():
+    user_message = st.text_input("質問を入力する", key="user_message")
+    st.button("送信", on_click=on_input_change)
